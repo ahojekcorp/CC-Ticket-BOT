@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Ticket, Shield, Users, MessageSquare, AlertCircle } from "lucide-react"
+import { Ticket, Shield, Users, MessageSquare, AlertCircle, ExternalLink } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useSearchParams } from "next/navigation"
 import { Suspense } from "react"
@@ -11,12 +11,11 @@ function HomeContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
 
-  const handleLogin = () => {
-    window.location.href = "/api/auth/discord"
-  }
+  const DISCORD_CLIENT_ID = "1423751425800011849"
+  const BOT_INVITE_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&permissions=8&scope=bot%20applications.commands`
 
-  const handleDebug = () => {
-    window.open("/api/auth/discord/debug", "_blank")
+  const handleInviteBot = () => {
+    window.open(BOT_INVITE_URL, "_blank")
   }
 
   const getErrorMessage = (errorCode: string | null) => {
@@ -25,20 +24,10 @@ function HomeContent() {
         return "Discord Client ID is not configured. Please set the DISCORD_CLIENT_ID environment variable."
       case "invalid_client_id":
         return "Discord Client ID is invalid. It must be a numeric Discord snowflake ID."
-      case "invalid_app_url_duplicate_protocol":
-        return "NEXT_PUBLIC_APP_URL has duplicate protocol (https://https://). Please fix the environment variable to use only one protocol."
-      case "invalid_app_url_placeholder":
-        return "NEXT_PUBLIC_APP_URL contains '...' placeholder. Please replace it with your actual deployment URL."
-      case "invalid_app_url_format":
-        return "NEXT_PUBLIC_APP_URL is not a valid URL format. Please check the environment variable."
-      case "missing_credentials":
-        return "Discord credentials are not configured. Please set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET."
       case "no_code":
         return "Authorization was cancelled or the code was not received from Discord. Please try logging in again."
       case "auth_failed":
         return "Authentication failed. Please try again."
-      case "token_exchange_failed":
-        return "Failed to exchange authorization code for access token. Please check your Discord application settings."
       default:
         return null
     }
@@ -55,14 +44,10 @@ function HomeContent() {
             <Ticket className="h-6 w-6 text-primary" />
             <span className="text-xl font-semibold">TicketBot</span>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleDebug} variant="outline" size="sm">
-              Debug OAuth
-            </Button>
-            <Button onClick={handleLogin} variant="default">
-              Login with Discord
-            </Button>
-          </div>
+          <Button onClick={handleInviteBot} variant="default">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Add to Discord
+          </Button>
         </div>
       </header>
 
@@ -72,12 +57,9 @@ function HomeContent() {
           {errorMessage && (
             <Alert variant="destructive" className="text-left">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Authentication Error</AlertTitle>
-              <AlertDescription className="space-y-2">
+              <AlertTitle>Notice</AlertTitle>
+              <AlertDescription>
                 <p>{errorMessage}</p>
-                <Button onClick={handleLogin} variant="outline" size="sm" className="mt-2 bg-transparent">
-                  Try Again
-                </Button>
               </AlertDescription>
             </Alert>
           )}
@@ -90,13 +72,39 @@ function HomeContent() {
           </div>
 
           <div className="flex gap-4 justify-center">
-            <Button onClick={handleLogin} size="lg" className="text-lg px-8">
-              Get Started
+            <Button onClick={handleInviteBot} size="lg" className="text-lg px-8">
+              <ExternalLink className="h-5 w-5 mr-2" />
+              Add Bot to Server
             </Button>
             <Button variant="outline" size="lg" className="text-lg px-8 bg-transparent">
               View Documentation
             </Button>
           </div>
+
+          <Card className="p-6 bg-muted/50 border-border text-left max-w-2xl mx-auto mt-12">
+            <h3 className="font-semibold text-lg mb-3">Quick Setup</h3>
+            <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+              <li>Click "Add Bot to Server" and select your Discord server</li>
+              <li>Grant the bot Administrator permissions</li>
+              <li>
+                Use Discord slash commands to configure your ticket system:
+                <ul className="ml-6 mt-2 space-y-1 list-disc list-inside">
+                  <li>
+                    <code className="bg-background px-1 py-0.5 rounded text-xs">/setup</code> - Initialize the ticket
+                    system
+                  </li>
+                  <li>
+                    <code className="bg-background px-1 py-0.5 rounded text-xs">/category add</code> - Create ticket
+                    categories
+                  </li>
+                  <li>
+                    <code className="bg-background px-1 py-0.5 rounded text-xs">/panel create</code> - Create a ticket
+                    panel
+                  </li>
+                </ul>
+              </li>
+            </ol>
+          </Card>
 
           {/* Features Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-16">
