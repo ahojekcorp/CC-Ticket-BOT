@@ -2,12 +2,49 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Ticket, Shield, Users, MessageSquare } from "lucide-react"
+import { Ticket, Shield, Users, MessageSquare, AlertCircle } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function HomePage() {
+function HomeContent() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get("error")
+
   const handleLogin = () => {
     window.location.href = "/api/auth/discord"
   }
+
+  const handleDebug = () => {
+    window.open("/api/auth/discord/debug", "_blank")
+  }
+
+  const getErrorMessage = (errorCode: string | null) => {
+    switch (errorCode) {
+      case "missing_client_id":
+        return "Discord Client ID is not configured. Please set the DISCORD_CLIENT_ID environment variable."
+      case "invalid_client_id":
+        return "Discord Client ID is invalid. It must be a numeric Discord snowflake ID."
+      case "invalid_app_url_duplicate_protocol":
+        return "NEXT_PUBLIC_APP_URL has duplicate protocol (https://https://). Please fix the environment variable to use only one protocol."
+      case "invalid_app_url_placeholder":
+        return "NEXT_PUBLIC_APP_URL contains '...' placeholder. Please replace it with your actual deployment URL."
+      case "invalid_app_url_format":
+        return "NEXT_PUBLIC_APP_URL is not a valid URL format. Please check the environment variable."
+      case "missing_credentials":
+        return "Discord credentials are not configured. Please set DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET."
+      case "no_code":
+        return "Authorization was cancelled or the code was not received from Discord. Please try logging in again."
+      case "auth_failed":
+        return "Authentication failed. Please try again."
+      case "token_exchange_failed":
+        return "Failed to exchange authorization code for access token. Please check your Discord application settings."
+      default:
+        return null
+    }
+  }
+
+  const errorMessage = getErrorMessage(error)
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -18,15 +55,33 @@ export default function HomePage() {
             <Ticket className="h-6 w-6 text-primary" />
             <span className="text-xl font-semibold">TicketBot</span>
           </div>
-          <Button onClick={handleLogin} variant="default">
-            Login with Discord
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleDebug} variant="outline" size="sm">
+              Debug OAuth
+            </Button>
+            <Button onClick={handleLogin} variant="default">
+              Login with Discord
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Hero Section */}
       <main className="flex-1 container mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto text-center space-y-8">
+          {errorMessage && (
+            <Alert variant="destructive" className="text-left">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Authentication Error</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>{errorMessage}</p>
+                <Button onClick={handleLogin} variant="outline" size="sm" className="mt-2 bg-transparent">
+                  Try Again
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-4">
             <h1 className="text-5xl font-bold tracking-tight">Professional Ticket System for Discord</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -93,5 +148,13 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  )
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   )
 }
