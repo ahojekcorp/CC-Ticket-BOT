@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { getTicketCategories, addTicketCategory, removeTicketCategory } from "@/lib/database"
+import { getGuildConfig, setGuildConfig } from "@/lib/database"
 
 async function verifyGuildAccess(guildId: string) {
   const cookieStore = await cookies()
@@ -28,8 +28,8 @@ export async function GET(request: NextRequest, { params }: { params: { guildId:
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  const categories = await getTicketCategories(guildId)
-  return NextResponse.json(categories)
+  const config = getGuildConfig(guildId)
+  return NextResponse.json(config || {})
 }
 
 export async function POST(request: NextRequest, { params }: { params: { guildId: string } }) {
@@ -41,26 +41,7 @@ export async function POST(request: NextRequest, { params }: { params: { guildId
   }
 
   const body = await request.json()
-  const category = await addTicketCategory(guildId, body)
+  const config = setGuildConfig(guildId, body)
 
-  return NextResponse.json(category)
-}
-
-export async function DELETE(request: NextRequest, { params }: { params: { guildId: string } }) {
-  const { guildId } = params
-
-  const hasAccess = await verifyGuildAccess(guildId)
-  if (!hasAccess) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
-  }
-
-  const { searchParams } = new URL(request.url)
-  const categoryId = searchParams.get("categoryId")
-
-  if (!categoryId) {
-    return NextResponse.json({ error: "Category ID required" }, { status: 400 })
-  }
-
-  const success = await removeTicketCategory(guildId, categoryId)
-  return NextResponse.json({ success })
+  return NextResponse.json(config)
 }
