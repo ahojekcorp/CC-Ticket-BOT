@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [guilds, setGuilds] = useState<Guild[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchUserData()
@@ -33,17 +34,31 @@ export default function DashboardPage() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch("/api/auth/me")
+      console.log("[v0] Dashboard: Fetching user data...")
+      const response = await fetch("/api/auth/me", {
+        credentials: "include",
+      })
+
+      console.log("[v0] Dashboard: Response status:", response.status)
+
       if (!response.ok) {
-        router.push("/")
+        const errorData = await response.json()
+        console.log("[v0] Dashboard: Auth failed:", errorData)
+        setError(`Authentication failed: ${errorData.error}`)
+        setTimeout(() => router.push("/"), 2000)
         return
       }
+
       const data = await response.json()
+      console.log("[v0] Dashboard: User data received:", data.user.username)
+      console.log("[v0] Dashboard: Guilds count:", data.guilds.length)
+
       setUser(data.user)
       setGuilds(data.guilds)
     } catch (error) {
-      console.error("Failed to fetch user data:", error)
-      router.push("/")
+      console.error("[v0] Dashboard: Failed to fetch user data:", error)
+      setError("Network error occurred")
+      setTimeout(() => router.push("/"), 2000)
     } finally {
       setLoading(false)
     }
@@ -63,8 +78,9 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
     )
   }
