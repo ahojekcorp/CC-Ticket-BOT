@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
-import { getGuildConfig, setGuildConfig } from "@/bot/utils/database"
+import { getTicketCategories, addTicketCategory, removeTicketCategory } from "@/lib/database"
 
 async function verifyGuildAccess(guildId: string) {
   const cookieStore = await cookies()
@@ -20,20 +20,20 @@ async function verifyGuildAccess(guildId: string) {
   return (permissions & MANAGE_GUILD) === MANAGE_GUILD
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ guildId: string }> }) {
-  const { guildId } = await params
+export async function GET(request: NextRequest, { params }: { params: { guildId: string } }) {
+  const { guildId } = params
 
   const hasAccess = await verifyGuildAccess(guildId)
   if (!hasAccess) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  const config = getGuildConfig(guildId)
-  return NextResponse.json(config || {})
+  const categories = await getTicketCategories(guildId)
+  return NextResponse.json(categories)
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ guildId: string }> }) {
-  const { guildId } = await params
+export async function POST(request: NextRequest, { params }: { params: { guildId: string } }) {
+  const { guildId } = params
 
   const hasAccess = await verifyGuildAccess(guildId)
   if (!hasAccess) {
@@ -41,7 +41,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const body = await request.json()
-  const config = setGuildConfig(guildId, body)
+  const category = await addTicketCategory(guildId, body)
 
-  return NextResponse.json(config)
+  return NextResponse.json(category)
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { guildId: string } }) {
+  const { guildId } = params
+
+  const hasAccess = await verifyGuildAccess(guildId)
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+  }
+
+  const { searchParams } = new URL(request.url)
+  const categoryId = searchParams.get("categoryId")
+
+  if (!categoryId) {
+    return NextResponse.json({ error: "Category ID required" }, { status: 400 })
+  }
+
+  const success = await removeTicketCategory(guildId, categoryId)
+  return NextResponse.json({ success })
 }
